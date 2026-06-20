@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcomFlow Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1d27;
+      padding: 20px 32px;
+      border-bottom: 1px solid #2a2d3a;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 { font-size: 22px; color: #fff; }
+    header span { font-size: 13px; color: #6b7280; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .container { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+
+    /* Карточки статистики */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-card .label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card .value { font-size: 28px; font-weight: 700; color: #fff; margin: 8px 0 4px; }
+    .stat-card .sub { font-size: 12px; color: #22c55e; }
+
+    /* Графики */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .chart-card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .chart-card h3 { font-size: 14px; color: #9ca3af; margin-bottom: 16px; }
+
+    /* Таблица товаров */
+    .table-card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .table-card h3 { font-size: 14px; color: #9ca3af; margin-bottom: 16px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 11px; color: #6b7280; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 1px solid #2a2d3a; }
+    td { padding: 12px; font-size: 14px; border-bottom: 1px solid #1f2230; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1f2230; }
+
+    .badge {
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge.completed { background: #14532d; color: #22c55e; }
+    .badge.pending   { background: #713f12; color: #f59e0b; }
+
+    .rating { color: #f59e0b; }
+
+    /* Лог событий */
+    .events-card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+    .events-card h3 { font-size: 14px; color: #9ca3af; margin-bottom: 12px; }
+    #event-log { height: 160px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+    .event-line { padding: 3px 0; border-bottom: 1px solid #1f2230; color: #9ca3af; }
+    .event-line .type-purchase { color: #22c55e; }
+    .event-line .type-view     { color: #60a5fa; }
+    .event-line .type-click    { color: #a78bfa; }
+    .event-line .type-add      { color: #f59e0b; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="dot"></div>
+  <h1>EcomFlow Dashboard</h1>
+  <span>обновляется каждые 3 сек</span>
+</header>
+
+<div class="container">
+
+  <!-- Карточки -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">Выручка</div>
+      <div class="value" id="revenue">—</div>
+      <div class="sub">из PostgreSQL</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Заказов</div>
+      <div class="value" id="orders-count">—</div>
+      <div class="sub">всего</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Средний чек</div>
+      <div class="value" id="avg-order">—</div>
+      <div class="sub">на заказ</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Выполнено</div>
+      <div class="value" id="completed">—</div>
+      <div class="sub">заказов</div>
+    </div>
+  </div>
+
+  <!-- Графики -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>Заказы по статусам</h3>
+      <canvas id="statusChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Цены товаров</h3>
+      <canvas id="priceChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Таблица товаров -->
+  <div class="table-card">
+    <h3>Каталог товаров (MongoDB)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Название</th>
+          <th>Цена</th>
+          <th>Склад</th>
+          <th>Рейтинг</th>
+        </tr>
+      </thead>
+      <tbody id="products-table"></tbody>
+    </table>
+  </div>
+
+  <!-- Лог заказов -->
+  <div class="events-card">
+    <h3>Последние заказы (PostgreSQL)</h3>
+    <div id="event-log"></div>
+  </div>
+
+</div>
+
+<script>
+  const API = 'http://localhost:8000';
+
+  // ── Графики ──────────────────────────
+  const statusChart = new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Выполнен', 'Ожидает'],
+      datasets: [{ data: [0, 0], backgroundColor: ['#22c55e', '#f59e0b'], borderWidth: 0 }]
+    },
+    options: { plugins: { legend: { labels: { color: '#9ca3af' } } } }
+  });
+
+  const priceChart = new Chart(document.getElementById('priceChart'), {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [{ label: 'Цена $', data: [], backgroundColor: '#6366f1', borderRadius: 6 }]
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#9ca3af' } } },
+      scales: {
+        x: { ticks: { color: '#6b7280' }, grid: { color: '#1f2230' } },
+        y: { ticks: { color: '#6b7280' }, grid: { color: '#1f2230' } }
+      }
+    }
+  });
+
+  // ── Загрузка данных ──────────────────
+  async function loadRevenue() {
+    const r = await fetch(`${API}/api/revenue`);
+    const { stats } = await r.json();
+    document.getElementById('revenue').textContent     = '$' + Number(stats.total_revenue).toFixed(2);
+    document.getElementById('orders-count').textContent = stats.total_orders;
+    document.getElementById('avg-order').textContent   = '$' + Number(stats.avg_order).toFixed(2);
+    document.getElementById('completed').textContent   = stats.completed;
+    statusChart.data.datasets[0].data = [stats.completed, stats.total_orders - stats.completed];
+    statusChart.update();
+  }
+
+  async function loadProducts() {
+    const r = await fetch(`${API}/api/products`);
+    const { products } = await r.json();
+    document.getElementById('products-table').innerHTML = products.map(p => `
+      <tr>
+        <td style="color:#6b7280">${p.id}</td>
+        <td>${p.name}</td>
+        <td style="color:#22c55e">$${p.price}</td>
+        <td>${p.stock}</td>
+        <td class="rating">${'★'.repeat(Math.round(p.rating))} ${p.rating}</td>
+      </tr>
+    `).join('');
+    priceChart.data.labels = products.map(p => p.name.split(' ')[0]);
+    priceChart.data.datasets[0].data = products.map(p => p.price);
+    priceChart.update();
+  }
+
+  async function loadOrders() {
+    const r = await fetch(`${API}/api/orders`);
+    const { orders } = await r.json();
+    const log = document.getElementById('event-log');
+    log.innerHTML = orders.map(o => `
+      <div class="event-line">
+        <span style="color:#6b7280">${new Date(o.created_at).toLocaleString('ru')}</span>
+        &nbsp;|&nbsp; ${o.user_name}
+        &nbsp;|&nbsp; <b style="color:#fff">$${o.total}</b>
+        &nbsp;|&nbsp; <span class="badge ${o.status}">${o.status}</span>
+      </div>
+    `).join('');
+  }
+
+  // ── Обновление каждые 3 сек ──────────
+  async function refresh() {
+    await Promise.all([loadRevenue(), loadProducts(), loadOrders()]);
+  }
+
+  refresh();
+  setInterval(refresh, 3000);
+</script>
+
+</body>
+</html>
