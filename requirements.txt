@@ -1,0 +1,7 @@
+fastapi==0.111.0
+uvicorn==0.29.0
+psycopg2-binary==2.9.9
+pymongo==4.7.2
+kafka-python==2.0.2
+pyspark==3.5.1
+aiofiles==23.2.1
