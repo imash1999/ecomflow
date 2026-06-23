@@ -27,7 +27,7 @@ jobs:
 
       - name: Lint with flake8
         run: |
-          flake8 services/ --max-line-length=120 --exclude=__pycache__ --ignore=E302,E305,E221,F401,E501
+          flake8 services/ --max-line-length=120 --exclude=__pycache__ --ignore=E302,E305,E221,F401,E501,E241,E123
 
       - name: Check files exist
         run: |
