@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels:
+    app: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: python:3.12-slim
+          ports:
+            - containerPort: 8000
+          env:
+            - name: POSTGRES_URL
+              value: "postgresql://ecom_user:ecom_pass@postgres:5432/ecomflow"
+            - name: MONGO_URL
+              value: "mongodb://ecom_user:ecom_pass@mongodb:27017/ecomflow?authSource=admin"
+            - name: KAFKA_BOOTSTRAP
+              value: "kafka:9092"
+          command: ["uvicorn", "services.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  selector:
+    app: api
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: NodePort
